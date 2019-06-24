@@ -1,0 +1,75 @@
+<html>
+<head>
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+    input[type=text] {
+      border-radius: 5px;
+      height: 35px;
+      width: 300px;
+      background-color: #FAFAFA;
+      outline-color: #F5F5F5;
+      font-family: 'Roboto', sans-serif;
+      font-size: 25px;
+    }
+    input[type=submit] {
+      border-radius: 5px;
+      height: 25px;
+      width: 300px;
+      background-color: #00C853;
+      font-family: 'Roboto', sans-serif;
+    }
+    input[type=file] {
+      content: 'Select some files';
+
+      display: inline-block;
+      background: linear-gradient(top, #f9f9f9, #e3e3e3);
+      border: 1px solid #999;
+      border-radius: 3px;
+      padding: 5px 8px;
+      outline: none;
+      width: 250px;
+      white-space: nowrap;
+      -webkit-user-select: none;
+      cursor: pointer;
+      text-shadow: 1px 1px #fff;
+      font-weight: 700;
+      font-size: 10pt;
+
+    }
+    label {
+      font-family: 'Roboto', sans-serif;
+    }
+    form {
+      width: 500px;
+    }
+  </style>
+</head>
+<center>
+<h1>Meme Generator API</h1>
+</center>
+<div>
+</div>
+<center>
+<form action="/submit" method="post" enctype="multipart/form-data" onsubmit="/submit">
+  <fieldset>
+    <legend>Create Your Dank Meme</legend>
+    <p>
+      <label for="top_text">Top Text <br>
+      <input type="text" name="top_text" required></label><br><br>
+      <label for="bottom_text">Bottom Text<br><input type="text" name="bottom_text" required></label>
+    </p>
+    <p>
+      <label >Select Photo:<br>
+      <input type="file" name="file"></label><br>
+      <small><small>If no file is provided, a random one will be chosen for you</small></small>
+    </p>
+    
+    <p>
+      <input type="submit" value="Submit" />
+    </p>
+    <img id="uploaded">
+    <div id="results"></div>
+  </fieldset>
+</form>
+</center>
+</html>

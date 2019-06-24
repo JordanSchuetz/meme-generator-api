@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="90d87b4f-c2a1-4e96-8af9-decbc13b5004" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="1800555d-c37b-4ed2-b963-8d24689d5a00" >
+		<file:connection workingDir="${mule.home}/apps/" />
+	</file:config>
+	<flow name="memeapiFlow" doc:id="7fa1da49-068f-434d-8383-5078b7bcdad6" >
+		<http:listener doc:name="Listener" doc:id="5086f802-dc18-4521-a309-799b2ce81ee5" config-ref="HTTP_Listener_config" path="/"/>
+		<file:read doc:name="Read" doc:id="060eed0c-fb61-454f-afe7-b5e756b10fe4" config-ref="File_Config" path="memeapi/index.html"/>
+		<logger level="INFO" doc:name="Logger" doc:id="10bfb6aa-4fa1-40ce-8263-e2ae20c6b0dc" message="#[payload]"/>
+	</flow>
+	<flow name="submit" doc:id="a699f65f-40ba-49c8-8ce1-ee72b960f607">
+		<http:listener doc:name="HTTP POST Listener" doc:id="e4148ec3-e583-4863-910c-ec112d903f53" config-ref="HTTP_Listener_config" path="/submit" allowedMethods="POST">
+		</http:listener>
+		<set-variable value="#[payload.parts[0].content]" doc:name="Top Text" doc:id="d4a4c89c-8641-4b52-bfa7-189b042e50ca" variableName="top_text" />
+		<set-variable value="#[payload.parts[1].content]" doc:name="Bottom Text" doc:id="e271ee70-3189-4a3e-bcf3-7df8f6575955" variableName="bottom_text" />
+		<choice doc:name="Choice" doc:id="e7a4a766-36a3-4ac2-894c-d4f07618149d">
+			<when expression="#[payload.parts[2].headers.'Content-Disposition'.filename == null]">
+				<ee:transform doc:name="Transform Static Image" doc:id="a1286967-7761-40d6-96ee-40e2e7a522a4" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import * from dw::core::URL
+var baseurl = "https://res.cloudinary.com/mulesoft/image/upload/v1560204264/max_the_mule.jpg"
+var url = baseurl splitBy("/")
+var top_text = "l_text:impact_55_stroke_center_line_spacing_-10:"++ encodeURI(vars.top_text) ++",co_white,bo_5px_solid_black,g_north,y_10,w_480,c_fit/"
+var bottom_text = "l_text:impact_55_stroke_center_line_spacing_-10:"++ encodeURI(vars.bottom_text) ++",co_white,bo_5px_solid_black,g_south,y_10,w_480,c_fit"
+---
+[
+    url[0],
+    url[1],
+    url[2],
+    url[3],
+    url[4],
+    url[5] ++ "/" ++ "w_500,h_500/" ++ top_text ++ bottom_text,
+    url[6],
+    url[7],
+ ] joinBy "/"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="bc36e9d5-75ce-495f-bad4-33e726aafc2b" message="#[payload]"/>
+				<http:request method="GET" doc:name="Get Request to Current Asset" doc:id="60a0f4eb-46a4-40b6-99a5-9c4b947dcb7f" url="#[payload]" />
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Multitype Upload" doc:id="94105f28-ceaa-4fb2-8169-10893f1b64a8">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+import dw::module::Multipart
+import * from dw::core::Binaries
+output multipart/form-data
+var file = payload.parts[2].content
+var upload_preset = "mulesoft-meme-generator"
+var filename = payload.parts[2].headers.'Content-Disposition'.filename
+---
+{
+  parts:{
+	"upload_preset": {
+		"headers" : {
+			//"Content-Type": "text/plain",
+			"Content-Disposition": {
+				"name": "upload_preset",
+			}
+		},
+		content: upload_preset
+	},
+	"file" : {
+		"headers" : {
+			"Content-Type": payload.parts[2].headers.'Content-Type',
+			"Content-Disposition" : {
+				"name": "file",
+				"filename": filename
+			}
+		},
+		content: file
+	}
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<http:request method="POST" doc:name="Upload Image to Cloudinary" doc:id="c25bfb6c-1622-4c80-9d68-82cf7fa16a3c" url="https://api.cloudinary.com/v1_1/mulesoft/image/upload">
+			<http:body><![CDATA[#[%dw 2.0
+output multipart/form-data
+---
+payload]]]></http:body>
+		</http:request>
+				<logger level="INFO" doc:name="Logger" doc:id="4b626428-ec72-462a-9469-ec919b26eade" message="#[payload]" />
+				<set-variable value="#[payload.secure_url]" doc:name="Cloudinary Image URl" doc:id="b5c3567a-d4a4-4983-9293-2da82402df89" variableName="url_var" />
+				<ee:transform doc:name="Transform Message" doc:id="bc16824d-dfb0-43ea-9f48-0f37fb964dc9">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+import * from dw::core::URL
+var url = vars.url_var splitBy("/")
+var top_text = "l_text:impact_55_stroke_center_line_spacing_-10:"++ encodeURI(vars.top_text) ++",co_white,bo_5px_solid_black,g_north,y_10,w_480,c_fit/"
+var bottom_text = "l_text:impact_55_stroke_center_line_spacing_-10:"++ encodeURI(vars.bottom_text) ++",co_white,bo_5px_solid_black,g_south,y_10,w_480,c_fit"
+---
+[
+    url[0],
+    url[1],
+    url[2],
+    url[3],
+    url[4],
+    url[5] ++ "/" ++ "w_500/" ++ top_text ++ bottom_text,
+    url[6],
+    url[7],
+    url[8],
+ ] joinBy "/"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="32426641-5123-4de9-8f05-fdb26b955dfc" message="#[payload]" />
+				<http:request method="GET" doc:name="HTTP GET to Cloudinary" doc:id="1a6deec4-cdfc-4290-8fcf-59cba7f65f46" url="#[payload]" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

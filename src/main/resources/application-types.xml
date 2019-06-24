@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="application" format="json">
+      <types:shape format="weave" example="jsonschematest.json"><![CDATA[%dw 2.0
+
+type application = Array<String> {"example": "[\"https:\",\"\",\"res.cloudinary.com\",\"mulesoft\",\"image\",\"upload\",\"v1560367790\",\"uploads\",\"zdj1gw4ze4j3s9unavl3.jpg\"]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#bc16824d-dfb0-43ea-9f48-0f37fb964dc9"/>
+</types:mule>
